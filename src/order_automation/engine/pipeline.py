@@ -61,13 +61,21 @@ class OrderPipeline:
         order.destinations = destinations
         order.status = OrderStatus.routed
 
-        # 4. Submit to each destination
+        # 4. Submit to each destination (database last so it captures final status)
         any_failure = False
-        for dest in destinations:
+        non_db = [d for d in destinations if d != "database"]
+        db_last = [d for d in destinations if d == "database"]
+
+        for dest in non_db + db_last:
             adapter = self._adapters.get(dest)
             if adapter is None:
                 log.warning("adapter_not_registered", destination=dest, order_id=order.id)
                 continue
+
+            # Set final status before the database write
+            if dest == "database":
+                order.status = OrderStatus.error if any_failure else OrderStatus.completed
+
             try:
                 sub_result = adapter.submit(order)
                 if not sub_result.success:
