@@ -9,6 +9,7 @@ export interface DashboardStats {
   orders_today: number;
   success_rate: number;
   total_revenue: number;
+  pending_reviews: number;
   trends: {
     orders_change: number;
     revenue_change: number;
@@ -41,6 +42,15 @@ export interface OrderDetail extends OrderSummary {
   notes: string;
   destinations: string[];
   line_items: LineItem[];
+  review: {
+    id: number;
+    confidence: number;
+    extraction_method: string;
+    anomalies: string[];
+    status: string;
+  } | null;
+  sap_order_type: string | null;
+  sap_data: Record<string, unknown> | null;
 }
 
 export interface LineItem {
@@ -124,6 +134,33 @@ export interface RoutingRule {
   destination: string;
 }
 
+export interface ReviewItem {
+  id: number;
+  order_id: string;
+  source: string;
+  customer_name: string;
+  po_number: string;
+  confidence: number;
+  extraction_method: string;
+  anomalies: string[];
+  original_text: string;
+  extracted_data: Record<string, unknown>;
+  status: string;
+  reviewer_notes: string;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export interface ReviewDetail extends ReviewItem {
+  order: OrderSummary | null;
+  line_items: LineItem[];
+}
+
+export interface ReviewCount {
+  pending: number;
+  total: number;
+}
+
 // ---- API Calls ----
 
 export const getStats = () => api.get<DashboardStats>('/stats');
@@ -170,5 +207,16 @@ export const uploadCsv = (file: File) => {
 export const getIntegrations = () => api.get<IntegrationStatus>('/settings/integrations');
 
 export const getRoutingRules = () => api.get<{ rules: RoutingRule[] }>('/settings/routing-rules');
+
+// Review Queue
+export const getReviewItems = (params?: { status?: string; limit?: number; offset?: number }) =>
+  api.get<{ items: ReviewItem[]; total: number; pending_count: number }>('/review', { params });
+
+export const getReviewCount = () => api.get<ReviewCount>('/review/count');
+
+export const getReviewItem = (id: number) => api.get<ReviewDetail>(`/review/${id}`);
+
+export const actionReviewItem = (id: number, data: { action: string; notes?: string; modified_data?: Record<string, unknown> }) =>
+  api.post(`/review/${id}`, data);
 
 export default api;

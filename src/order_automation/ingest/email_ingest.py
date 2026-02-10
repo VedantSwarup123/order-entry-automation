@@ -1,11 +1,11 @@
 """Email ingest via Composio (Gmail / Outlook).
 
-Polls for new emails, parses order data from the body using regex patterns,
-and creates orders. Unparseable emails are flagged for manual review.
+Polls for new emails, extracts order data using LLM-powered extraction
+(with regex fallback), and creates orders. Low-confidence extractions
+are flagged for human review.
 """
 from __future__ import annotations
 
-import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
@@ -13,6 +13,7 @@ import structlog
 
 from order_automation.ingest.base import IngestSource
 from order_automation.integrations.composio_client import execute_action
+from order_automation.integrations.llm_client import extract_order_from_text
 from order_automation.models.order import (
     Address,
     Order,
@@ -23,33 +24,8 @@ from order_automation.models.order import (
 
 log = structlog.get_logger()
 
-# Key-value patterns:  customer_id: CUST-123
-_KV_PATTERN = re.compile(r"^\s*([\w_]+)\s*:\s*(.+)$", re.MULTILINE)
-
-# Tabular line-item pattern:  SKU  QTY  PRICE
-_LINE_PATTERN = re.compile(
-    r"^\s*(\S+)\s+(\d+)\s+\$?([\d,.]+)\s*$", re.MULTILINE
-)
-
-
-def _extract_kv(body: str) -> dict[str, str]:
-    """Extract key:value pairs from the email body."""
-    return {m.group(1).lower(): m.group(2).strip() for m in _KV_PATTERN.finditer(body)}
-
-
-def _extract_line_items(body: str) -> list[OrderLineItem]:
-    """Extract tabular line items (SKU QTY PRICE) from the email body."""
-    items: list[OrderLineItem] = []
-    for m in _LINE_PATTERN.finditer(body):
-        try:
-            items.append(OrderLineItem(
-                sku=m.group(1),
-                quantity=int(m.group(2)),
-                unit_price=Decimal(m.group(3).replace(",", "")),
-            ))
-        except (InvalidOperation, ValueError):
-            continue
-    return items
+# Orders below this confidence go to review queue
+CONFIDENCE_THRESHOLD = 0.7
 
 
 class EmailIngest(IngestSource):
@@ -80,32 +56,74 @@ class EmailIngest(IngestSource):
         return raws
 
     def parse(self, raw: RawOrder) -> list[Order]:
-        """Parse an email body into an Order."""
-        kv = _extract_kv(raw.body)
-        items = _extract_line_items(raw.body)
+        """Parse an email body into an Order using LLM extraction."""
+        extracted = extract_order_from_text(raw.body, source="email")
+
+        confidence = extracted.get("confidence", 0.0)
+        extraction_method = extracted.get("extraction_method", "unknown")
+        anomalies = extracted.get("anomalies", [])
+
+        # Build line items from extracted data
+        items: list[OrderLineItem] = []
+        for li in extracted.get("line_items", []):
+            try:
+                items.append(OrderLineItem(
+                    sku=li.get("sku", "UNKNOWN"),
+                    description=li.get("description", ""),
+                    quantity=int(li.get("quantity", 1)),
+                    unit_price=Decimal(str(li.get("unit_price", 0))),
+                    uom=li.get("uom", "EA"),
+                ))
+            except (InvalidOperation, ValueError):
+                continue
 
         if not items:
-            # Unparseable → flag for review
             items = [OrderLineItem(sku="REVIEW", quantity=1, unit_price=Decimal(0))]
             log.warning("email_parse_fallback", source_ref=raw.source_ref)
 
-        return [Order(
+        # Build ship_to from extracted data
+        ship_to_data = extracted.get("ship_to", {})
+
+        # Determine if order needs review
+        needs_review = confidence < CONFIDENCE_THRESHOLD or len(anomalies) > 0
+
+        metadata = {
+            **raw.metadata,
+            "extraction_method": extraction_method,
+            "confidence": confidence,
+            "anomalies": anomalies,
+            "needs_review": needs_review,
+        }
+
+        order = Order(
             source=OrderSource.email,
             source_ref=raw.source_ref,
-            customer_id=kv.get("customer_id", ""),
-            customer_name=kv.get("customer_name", ""),
-            po_number=kv.get("po_number", ""),
+            customer_id=extracted.get("customer_id", ""),
+            customer_name=extracted.get("customer_name", ""),
+            po_number=extracted.get("po_number", ""),
             order_date=date.today(),
             ship_to=Address(
-                name=kv.get("ship_to_name", ""),
-                line1=kv.get("ship_to_address", ""),
-                city=kv.get("ship_to_city", ""),
-                state=kv.get("ship_to_state", ""),
-                postal_code=kv.get("ship_to_zip", ""),
+                name=ship_to_data.get("name", ""),
+                line1=ship_to_data.get("line1", ""),
+                city=ship_to_data.get("city", ""),
+                state=ship_to_data.get("state", ""),
+                postal_code=ship_to_data.get("postal_code", ""),
             ),
             line_items=items,
-            metadata=raw.metadata,
-        )]
+            notes=extracted.get("notes", ""),
+            metadata=metadata,
+        )
+
+        log.info(
+            "email_parsed",
+            source_ref=raw.source_ref,
+            method=extraction_method,
+            confidence=confidence,
+            anomalies=len(anomalies),
+            needs_review=needs_review,
+        )
+
+        return [order]
 
     def mark_read(self, source_ref: str) -> None:
         """Mark an email as read after processing."""

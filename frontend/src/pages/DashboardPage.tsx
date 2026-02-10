@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, CalendarDays, CheckCircle2, DollarSign, Activity } from 'lucide-react';
+import { Package, CalendarDays, CheckCircle2, DollarSign, Activity, ShieldCheck } from 'lucide-react';
 import StatCard from '../components/ui/StatCard';
 import GlassCard from '../components/ui/GlassCard';
 import StatusBadge from '../components/ui/StatusBadge';
@@ -72,9 +72,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
         {loading ? (
           <>
+            <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
@@ -106,13 +107,20 @@ export default function DashboardPage() {
               delay={200}
             />
             <StatCard
+              label="Pending Reviews"
+              value={stats?.pending_reviews ?? 0}
+              icon={<ShieldCheck size={20} />}
+              color="rose"
+              delay={300}
+            />
+            <StatCard
               label="Total Revenue"
               value={stats?.total_revenue ?? 0}
               icon={<DollarSign size={20} />}
               trend={stats?.trends.revenue_change}
               prefix="$"
               color="purple"
-              delay={300}
+              delay={400}
             />
           </>
         )}

@@ -23,6 +23,7 @@ from order_automation.output.database import (
     Base,
     LineItemRecord,
     OrderRecord,
+    ReviewQueueRecord,
 )
 
 log = structlog.get_logger()
@@ -88,11 +89,19 @@ def get_stats() -> dict[str, Any]:
         )
         orders_change = round(((this_week - last_week) / max(last_week, 1)) * 100, 1)
 
+        # Review queue count
+        pending_reviews = (
+            session.query(func.count(ReviewQueueRecord.id))
+            .filter(ReviewQueueRecord.status == "pending")
+            .scalar() or 0
+        )
+
         return {
             "total_orders": total,
             "orders_today": orders_today,
             "success_rate": success_rate,
             "total_revenue": total_revenue,
+            "pending_reviews": pending_reviews,
             "trends": {
                 "orders_change": orders_change,
                 "revenue_change": orders_change,  # approximate
@@ -196,6 +205,18 @@ def get_order(order_id: str) -> dict[str, Any]:
             for li in items
         ]
 
+        # Check for review queue data
+        review = session.query(ReviewQueueRecord).filter_by(order_id=order_id).first()
+        review_data = None
+        if review:
+            review_data = {
+                "id": review.id,
+                "confidence": float(review.confidence or 0),
+                "extraction_method": review.extraction_method or "",
+                "anomalies": json.loads(review.anomalies) if review.anomalies else [],
+                "status": review.status or "pending",
+            }
+
         return {
             "id": r.id,
             "customer_id": r.customer_id,
@@ -219,6 +240,9 @@ def get_order(order_id: str) -> dict[str, Any]:
             "destinations": [],
             "line_items": line_items,
             "item_count": len(line_items),
+            "review": review_data,
+            "sap_order_type": r.sap_order_type if hasattr(r, "sap_order_type") else None,
+            "sap_data": json.loads(r.sap_data) if hasattr(r, "sap_data") and r.sap_data else None,
         }
     finally:
         session.close()
@@ -487,3 +511,209 @@ def settings_routing_rules() -> dict[str, list[dict[str, str]]]:
         }
     except FileNotFoundError:
         return {"rules": []}
+
+
+# ------------------------------------------------------------------
+# Review Queue
+# ------------------------------------------------------------------
+
+@router.get("/review")
+def list_review_items(
+    status: str | None = None,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+) -> dict[str, Any]:
+    session = _get_session()
+    try:
+        q = session.query(ReviewQueueRecord)
+        if status:
+            q = q.filter(ReviewQueueRecord.status == status)
+        total = q.count()
+        items = (
+            q.order_by(ReviewQueueRecord.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+        return {
+            "items": [
+                {
+                    "id": r.id,
+                    "order_id": r.order_id,
+                    "source": r.source or "",
+                    "customer_name": r.customer_name or "",
+                    "po_number": r.po_number or "",
+                    "confidence": float(r.confidence or 0),
+                    "extraction_method": r.extraction_method or "",
+                    "anomalies": json.loads(r.anomalies) if r.anomalies else [],
+                    "original_text": r.original_text or "",
+                    "extracted_data": json.loads(r.extracted_data) if r.extracted_data else {},
+                    "status": r.status or "pending",
+                    "reviewer_notes": r.reviewer_notes or "",
+                    "reviewed_at": str(r.reviewed_at) if r.reviewed_at else None,
+                    "created_at": str(r.created_at) if r.created_at else "",
+                }
+                for r in items
+            ],
+            "total": total,
+            "pending_count": session.query(func.count(ReviewQueueRecord.id)).filter(
+                ReviewQueueRecord.status == "pending"
+            ).scalar() or 0,
+        }
+    finally:
+        session.close()
+
+
+@router.get("/review/count")
+def review_count() -> dict[str, int]:
+    session = _get_session()
+    try:
+        pending = (
+            session.query(func.count(ReviewQueueRecord.id))
+            .filter(ReviewQueueRecord.status == "pending")
+            .scalar() or 0
+        )
+        total = session.query(func.count(ReviewQueueRecord.id)).scalar() or 0
+        return {"pending": pending, "total": total}
+    finally:
+        session.close()
+
+
+@router.get("/review/{review_id}")
+def get_review_item(review_id: int) -> dict[str, Any]:
+    session = _get_session()
+    try:
+        r = session.query(ReviewQueueRecord).filter_by(id=review_id).first()
+        if not r:
+            raise HTTPException(status_code=404, detail="Review item not found")
+
+        # Also fetch the order details and line items
+        order = session.query(OrderRecord).filter_by(id=r.order_id).first()
+        line_items = []
+        if order:
+            items = session.query(LineItemRecord).filter_by(order_id=r.order_id).all()
+            line_items = [
+                {
+                    "id": li.id,
+                    "sku": li.sku,
+                    "description": li.description,
+                    "quantity": int(li.quantity or 0),
+                    "unit_price": float(li.unit_price or 0),
+                    "uom": li.uom,
+                    "line_total": float(li.line_total or 0),
+                }
+                for li in items
+            ]
+
+        return {
+            "id": r.id,
+            "order_id": r.order_id,
+            "source": r.source or "",
+            "customer_name": r.customer_name or "",
+            "po_number": r.po_number or "",
+            "confidence": float(r.confidence or 0),
+            "extraction_method": r.extraction_method or "",
+            "anomalies": json.loads(r.anomalies) if r.anomalies else [],
+            "original_text": r.original_text or "",
+            "extracted_data": json.loads(r.extracted_data) if r.extracted_data else {},
+            "status": r.status or "pending",
+            "reviewer_notes": r.reviewer_notes or "",
+            "reviewed_at": str(r.reviewed_at) if r.reviewed_at else None,
+            "created_at": str(r.created_at) if r.created_at else "",
+            "order": {
+                "id": order.id,
+                "customer_id": order.customer_id,
+                "customer_name": order.customer_name,
+                "po_number": order.po_number,
+                "source": order.source,
+                "total_amount": float(order.total_amount or 0),
+                "total_quantity": int(order.total_quantity or 0),
+                "status": order.status,
+                "created_at": str(order.created_at) if order.created_at else "",
+            } if order else None,
+            "line_items": line_items,
+        }
+    finally:
+        session.close()
+
+
+from pydantic import BaseModel
+
+
+class ReviewAction(BaseModel):
+    action: str  # approve, reject, modify
+    notes: str = ""
+    modified_data: dict[str, Any] | None = None
+
+
+@router.post("/review/{review_id}")
+def action_review_item(review_id: int, body: ReviewAction) -> dict[str, Any]:
+    session = _get_session()
+    try:
+        r = session.query(ReviewQueueRecord).filter_by(id=review_id).first()
+        if not r:
+            raise HTTPException(status_code=404, detail="Review item not found")
+
+        now = datetime.now(UTC)
+
+        if body.action == "approve":
+            r.status = "approved"
+            r.reviewer_notes = body.notes
+            r.reviewed_at = now
+            # Update the order status to validated
+            order = session.query(OrderRecord).filter_by(id=r.order_id).first()
+            if order:
+                order.status = "validated"
+                session.add(AuditLogRecord(
+                    order_id=r.order_id,
+                    action="review_approved",
+                    detail=f"Approved by reviewer. Notes: {body.notes}",
+                    timestamp=now,
+                ))
+
+        elif body.action == "reject":
+            r.status = "rejected"
+            r.reviewer_notes = body.notes
+            r.reviewed_at = now
+            order = session.query(OrderRecord).filter_by(id=r.order_id).first()
+            if order:
+                order.status = "error"
+                order.errors = f"Rejected in review: {body.notes}"
+                session.add(AuditLogRecord(
+                    order_id=r.order_id,
+                    action="review_rejected",
+                    detail=f"Rejected by reviewer. Notes: {body.notes}",
+                    timestamp=now,
+                ))
+
+        elif body.action == "modify":
+            r.status = "modified"
+            r.reviewer_notes = body.notes
+            r.reviewed_at = now
+            if body.modified_data:
+                r.extracted_data = json.dumps(body.modified_data, default=str)
+                # Update order with modified data
+                order = session.query(OrderRecord).filter_by(id=r.order_id).first()
+                if order:
+                    md = body.modified_data
+                    if "customer_name" in md:
+                        order.customer_name = md["customer_name"]
+                    if "customer_id" in md:
+                        order.customer_id = md["customer_id"]
+                    if "po_number" in md:
+                        order.po_number = md["po_number"]
+                    order.status = "validated"
+                    session.add(AuditLogRecord(
+                        order_id=r.order_id,
+                        action="review_modified",
+                        detail=f"Modified and approved. Notes: {body.notes}",
+                        timestamp=now,
+                    ))
+
+        session.commit()
+        return {"status": "ok", "review_status": r.status}
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(exc))
+    finally:
+        session.close()

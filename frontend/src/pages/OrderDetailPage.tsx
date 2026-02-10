@@ -1,11 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, FileText, AlertTriangle, Download, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeft,
+  MapPin,
+  FileText,
+  AlertTriangle,
+  Download,
+  RefreshCw,
+  Brain,
+  Shield,
+  Cpu,
+} from 'lucide-react';
 import GlassCard from '../components/ui/GlassCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import SourceBadge from '../components/ui/SourceBadge';
 import Skeleton from '../components/ui/Skeleton';
 import { getOrder, type OrderDetail } from '../services/api';
+
+const confidenceColor = (c: number) => {
+  if (c >= 0.8) return 'text-[var(--accent-emerald)]';
+  if (c >= 0.6) return 'text-[var(--accent-amber)]';
+  return 'text-[var(--accent-rose)]';
+};
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +66,8 @@ export default function OrderDetailPage() {
     );
   }
 
+  const sapData = order.sap_data as Record<string, unknown> | null;
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -85,6 +103,57 @@ export default function OrderDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Confidence / Review Banner */}
+      {order.review && (
+        <div className={`flex items-center gap-4 px-5 py-3 rounded-xl border ${
+          order.review.confidence >= 0.8
+            ? 'bg-[var(--accent-emerald)]/5 border-[var(--accent-emerald)]/20'
+            : order.review.confidence >= 0.6
+            ? 'bg-[var(--accent-amber)]/5 border-[var(--accent-amber)]/20'
+            : 'bg-[var(--accent-rose)]/5 border-[var(--accent-rose)]/20'
+        }`}>
+          <Brain size={18} className={confidenceColor(order.review.confidence)} />
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-[var(--text-primary)]">
+                AI Extraction Confidence:
+                <span className={`ml-2 font-bold ${confidenceColor(order.review.confidence)}`}>
+                  {Math.round(order.review.confidence * 100)}%
+                </span>
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] text-[var(--text-muted)]">
+                {order.review.extraction_method}
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                order.review.status === 'approved'
+                  ? 'bg-[var(--accent-emerald)]/10 text-[var(--accent-emerald)] border-[var(--accent-emerald)]/20'
+                  : order.review.status === 'pending'
+                  ? 'bg-[var(--accent-amber)]/10 text-[var(--accent-amber)] border-[var(--accent-amber)]/20'
+                  : 'bg-[var(--accent-rose)]/10 text-[var(--accent-rose)] border-[var(--accent-rose)]/20'
+              }`}>
+                Review: {order.review.status}
+              </span>
+            </div>
+            {order.review.anomalies.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {order.review.anomalies.map((a, i) => (
+                  <span key={i} className="text-xs px-2 py-1 rounded bg-[var(--accent-rose)]/10 text-[var(--accent-rose)]">
+                    {a}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/review')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/20 transition-colors"
+          >
+            <Shield size={12} />
+            Review Queue
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
@@ -128,6 +197,42 @@ export default function OrderDetailPage() {
             </div>
           </GlassCard>
 
+          {/* SAP Preview */}
+          {sapData && (
+            <GlassCard className="overflow-hidden">
+              <div className="px-6 py-4 border-b border-[var(--border)] flex items-center gap-2">
+                <Cpu size={16} className="text-[var(--accent-blue)]" />
+                <h3 className="text-sm font-semibold">SAP VA-01 Preview</h3>
+                {order.sap_order_type && (
+                  <span className={`ml-2 px-2 py-0.5 text-xs rounded-full border ${
+                    order.sap_order_type === 'ZL01'
+                      ? 'bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border-[var(--accent-blue)]/20'
+                      : 'bg-[var(--accent-emerald)]/10 text-[var(--accent-emerald)] border-[var(--accent-emerald)]/20'
+                  }`}>
+                    {order.sap_order_type} — {order.sap_order_type === 'ZL01' ? 'Stock Order' : 'Drop Ship'}
+                  </span>
+                )}
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  {[
+                    ['Order Type', `${sapData.order_type} (${sapData.order_type_desc})`],
+                    ['Sales Org', String(sapData.sales_org || '—')],
+                    ['Plant', String(sapData.plant || '—')],
+                    ['Delivery Priority', String(sapData.delivery_priority || '—')],
+                    ['Incoterms', String(sapData.incoterms || '—')],
+                    ['Customer PO', order.po_number],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <p className="text-xs text-[var(--text-muted)] mb-0.5">{label}</p>
+                      <p className="font-medium text-[var(--text-primary)]">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
           {/* Errors */}
           {order.errors && order.errors.length > 0 && (
             <GlassCard className="p-6 border-[var(--accent-rose)]/30">
@@ -165,9 +270,10 @@ export default function OrderDetailPage() {
               {[
                 ['Order Date', order.order_date],
                 ['Source', order.source],
-                ['Source Ref', order.source_ref || '—'],
+                ['Source Ref', order.source_ref || '\u2014'],
                 ['Items', String(order.line_items.length)],
                 ['Total Qty', String(order.total_quantity)],
+                ['SAP Type', order.sap_order_type || '\u2014'],
                 ['Created', new Date(order.created_at).toLocaleString()],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between">

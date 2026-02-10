@@ -55,6 +55,10 @@ class OrderRecord(Base):
     status = Column(String, default="pending")
     errors = Column(Text, default="")
     notes = Column(Text, default="")
+    confidence = Column(Numeric, default=None, nullable=True)
+    extraction_method = Column(String, default="", nullable=True)
+    sap_order_type = Column(String, default="", nullable=True)
+    sap_data = Column(Text, default="", nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
 
@@ -94,6 +98,27 @@ class DeadLetterRecord(Base):
     order_id = Column(String, nullable=False)
     payload = Column(Text, nullable=False)
     error = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+
+
+class ReviewQueueRecord(Base):
+    """Orders flagged for human review."""
+
+    __tablename__ = "review_queue"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    order_id = Column(String, nullable=False)
+    source = Column(String, default="")
+    customer_name = Column(String, default="")
+    po_number = Column(String, default="")
+    confidence = Column(Numeric, default=0.0)
+    extraction_method = Column(String, default="")
+    anomalies = Column(Text, default="")
+    original_text = Column(Text, default="")
+    extracted_data = Column(Text, default="")
+    status = Column(String, default="pending")  # pending, approved, rejected, modified
+    reviewer_notes = Column(Text, default="")
+    reviewed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
 

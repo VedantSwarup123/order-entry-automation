@@ -14,13 +14,16 @@ import {
   Moon,
   Search,
   Zap,
+  ShieldCheck,
 } from 'lucide-react';
+import { getReviewCount } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/orders', icon: Package, label: 'Orders' },
   { to: '/orders/new', icon: PlusCircle, label: 'New Order' },
+  { to: '/review', icon: ShieldCheck, label: 'Review Queue', badge: true },
   { to: '/inbox', icon: Inbox, label: 'Inbox' },
   { to: '/customers', icon: Users, label: 'Customers' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
@@ -31,6 +34,7 @@ const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
   '/orders': 'Orders',
   '/orders/new': 'New Order',
+  '/review': 'Review Queue',
   '/inbox': 'Inbox',
   '/customers': 'Customers',
   '/analytics': 'Analytics',
@@ -39,6 +43,7 @@ const pageTitles: Record<string, string> = {
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [reviewPending, setReviewPending] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
@@ -51,6 +56,19 @@ export default function DashboardLayout() {
   useEffect(() => {
     document.title = `${pageTitle} — OrderFlow`;
   }, [pageTitle]);
+
+  // Fetch review queue count
+  useEffect(() => {
+    const fetchReviewCount = async () => {
+      try {
+        const { data } = await getReviewCount();
+        setReviewPending(data.pending);
+      } catch { /* ignore */ }
+    };
+    fetchReviewCount();
+    const interval = setInterval(fetchReviewCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-collapse sidebar on smaller screens
   useEffect(() => {
@@ -107,6 +125,13 @@ export default function DashboardLayout() {
               >
                 {item.label}
               </span>
+              {'badge' in item && item.badge && reviewPending > 0 && (
+                <span className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[var(--accent-rose)] text-white text-xs font-bold shrink-0"
+                  style={{ opacity: collapsed ? 0 : 1 }}
+                >
+                  {reviewPending}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

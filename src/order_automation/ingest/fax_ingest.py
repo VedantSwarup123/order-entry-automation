@@ -1,12 +1,11 @@
 """Fax / scanned document ingest via OCR.
 
 Watches a directory for PDF and image files, extracts text using
-pytesseract, and parses order data with regex.  Low-quality extractions
-are moved to a review directory for manual handling.
+pytesseract, then uses LLM-powered extraction (with regex fallback)
+to parse order data. Low-quality extractions are flagged for review.
 """
 from __future__ import annotations
 
-import re
 import shutil
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -15,6 +14,7 @@ from pathlib import Path
 import structlog
 
 from order_automation.ingest.base import IngestSource
+from order_automation.integrations.llm_client import extract_order_from_text
 from order_automation.models.order import (
     Address,
     Order,
@@ -27,6 +27,9 @@ log = structlog.get_logger()
 
 _IMAGE_EXT = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 _PDF_EXT = {".pdf"}
+
+# Orders below this confidence go to review queue
+CONFIDENCE_THRESHOLD = 0.65
 
 # Try to import OCR libs; gracefully degrade if missing.
 try:
@@ -46,10 +49,6 @@ try:
 except ImportError:
     PDF2IMAGE_AVAILABLE = False
     convert_from_path = None  # type: ignore[assignment]
-
-# Regex for key: value in OCR text
-_KV_PATTERN = re.compile(r"([\w\s]+?)\s*:\s*(.+)")
-_LINE_PATTERN = re.compile(r"(\S+)\s+(\d+)\s+\$?([\d,.]+)")
 
 
 def _ocr_image(path: Path) -> str:
@@ -71,7 +70,7 @@ def _ocr_pdf(path: Path) -> str:
     return "\n".join(texts)
 
 
-def _confidence_score(text: str) -> float:
+def _ocr_confidence_score(text: str) -> float:
     """Rough heuristic: ratio of alphanumeric chars to total length."""
     if not text:
         return 0.0
@@ -80,7 +79,7 @@ def _confidence_score(text: str) -> float:
 
 
 class FaxIngest(IngestSource):
-    """Watches for fax/scanned files and applies OCR."""
+    """Watches for fax/scanned files and applies OCR + LLM extraction."""
 
     def __init__(
         self,
@@ -109,7 +108,7 @@ class FaxIngest(IngestSource):
             else:
                 continue
 
-            conf = _confidence_score(text)
+            conf = _ocr_confidence_score(text)
             if conf < self.min_confidence:
                 log.warning("fax_low_confidence", file=fpath.name, confidence=conf)
                 self.review_dir.mkdir(parents=True, exist_ok=True)
@@ -120,7 +119,7 @@ class FaxIngest(IngestSource):
                 source=OrderSource.fax,
                 source_ref=str(fpath),
                 body=text,
-                metadata={"filename": fpath.name, "confidence": conf},
+                metadata={"filename": fpath.name, "ocr_confidence": conf},
             ))
             self.processed_dir.mkdir(parents=True, exist_ok=True)
             shutil.move(str(fpath), str(self.processed_dir / fpath.name))
@@ -128,19 +127,23 @@ class FaxIngest(IngestSource):
         return raws
 
     def parse(self, raw: RawOrder) -> list[Order]:
-        """Parse OCR text into an Order."""
-        kv: dict[str, str] = {}
-        for m in _KV_PATTERN.finditer(raw.body):
-            key = m.group(1).strip().lower().replace(" ", "_")
-            kv[key] = m.group(2).strip()
+        """Parse OCR text into an Order using LLM extraction."""
+        extracted = extract_order_from_text(raw.body, source="fax")
 
+        confidence = extracted.get("confidence", 0.0)
+        extraction_method = extracted.get("extraction_method", "unknown")
+        anomalies = extracted.get("anomalies", [])
+
+        # Build line items from extracted data
         items: list[OrderLineItem] = []
-        for m in _LINE_PATTERN.finditer(raw.body):
+        for li in extracted.get("line_items", []):
             try:
                 items.append(OrderLineItem(
-                    sku=m.group(1),
-                    quantity=int(m.group(2)),
-                    unit_price=Decimal(m.group(3).replace(",", "")),
+                    sku=li.get("sku", "UNKNOWN"),
+                    description=li.get("description", ""),
+                    quantity=int(li.get("quantity", 1)),
+                    unit_price=Decimal(str(li.get("unit_price", 0))),
+                    uom=li.get("uom", "EA"),
                 ))
             except (InvalidOperation, ValueError):
                 continue
@@ -148,20 +151,51 @@ class FaxIngest(IngestSource):
         if not items:
             items = [OrderLineItem(sku="REVIEW", quantity=1, unit_price=Decimal(0))]
 
-        return [Order(
+        # Build ship_to from extracted data
+        ship_to_data = extracted.get("ship_to", {})
+
+        # Determine if order needs review
+        needs_review = confidence < CONFIDENCE_THRESHOLD or len(anomalies) > 0
+
+        metadata = {
+            **raw.metadata,
+            "extraction_method": extraction_method,
+            "confidence": confidence,
+            "anomalies": anomalies,
+            "needs_review": needs_review,
+        }
+
+        order = Order(
             source=OrderSource.fax,
             source_ref=raw.source_ref,
-            customer_id=kv.get("customer_id", ""),
-            customer_name=kv.get("customer_name", kv.get("customer", "")),
-            po_number=kv.get("po_number", kv.get("po", "")),
+            customer_id=extracted.get("customer_id", ""),
+            customer_name=extracted.get("customer_name", kv_get_compat(extracted, "customer", "")),
+            po_number=extracted.get("po_number", ""),
             order_date=date.today(),
             ship_to=Address(
-                name=kv.get("ship_to_name", kv.get("ship_to", "")),
-                line1=kv.get("ship_to_address", kv.get("address", "")),
-                city=kv.get("ship_to_city", kv.get("city", "")),
-                state=kv.get("ship_to_state", kv.get("state", "")),
-                postal_code=kv.get("ship_to_zip", kv.get("zip", "")),
+                name=ship_to_data.get("name", ""),
+                line1=ship_to_data.get("line1", ""),
+                city=ship_to_data.get("city", ""),
+                state=ship_to_data.get("state", ""),
+                postal_code=ship_to_data.get("postal_code", ""),
             ),
             line_items=items,
-            metadata=raw.metadata,
-        )]
+            notes=extracted.get("notes", ""),
+            metadata=metadata,
+        )
+
+        log.info(
+            "fax_parsed",
+            source_ref=raw.source_ref,
+            method=extraction_method,
+            confidence=confidence,
+            anomalies=len(anomalies),
+            needs_review=needs_review,
+        )
+
+        return [order]
+
+
+def kv_get_compat(data: dict, key: str, default: str = "") -> str:
+    """Compatibility helper for nested key access."""
+    return data.get(key, default)

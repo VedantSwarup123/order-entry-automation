@@ -10,6 +10,7 @@ import InboxPage from './pages/InboxPage';
 import CustomersPage from './pages/CustomersPage';
 import CustomerDetailPage from './pages/CustomerDetailPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import ReviewPage from './pages/ReviewPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/review" element={<ReviewPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
