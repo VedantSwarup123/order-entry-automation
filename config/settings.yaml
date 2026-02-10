@@ -1,0 +1,90 @@
+# Order Entry Automation – master configuration
+# All runtime behaviour is driven by this file; no magic constants in code.
+
+database:
+  url: "sqlite:///orders.db"
+
+ingest:
+  csv:
+    enabled: true
+    watch_dir: "inbox/csv"
+    processed_dir: "processed/csv"
+    poll_interval_seconds: 30
+    column_mapping:
+      po_number: "PO Number"
+      customer_id: "Customer ID"
+      customer_name: "Customer Name"
+      sku: "SKU"
+      description: "Description"
+      quantity: "Quantity"
+      unit_price: "Unit Price"
+      uom: "UOM"
+      ship_to_name: "Ship To Name"
+      ship_to_line1: "Ship To Address"
+      ship_to_city: "Ship To City"
+      ship_to_state: "Ship To State"
+      ship_to_postal_code: "Ship To Zip"
+
+  email:
+    enabled: false
+    poll_interval_seconds: 120
+    provider: "gmail"   # gmail | outlook
+
+  sheets:
+    enabled: false
+    poll_interval_seconds: 60
+    spreadsheet_id: ""
+    sheet_name: "Orders"
+    column_mapping:
+      po_number: 0
+      customer_id: 1
+      customer_name: 2
+      sku: 3
+      description: 4
+      quantity: 5
+      unit_price: 6
+
+  api:
+    enabled: true
+    host: "0.0.0.0"
+    port: 8000
+    api_key: "dev-api-key-change-me"
+
+  fax:
+    enabled: false
+    watch_dir: "inbox/fax"
+    processed_dir: "processed/fax"
+    review_dir: "review/fax"
+    poll_interval_seconds: 60
+    min_confidence: 0.6
+
+output:
+  database:
+    enabled: true
+
+  sheets:
+    enabled: false
+    spreadsheet_id: ""
+    sheet_name: "OrderLog"
+
+  slack:
+    enabled: false
+    channel: "#orders"
+
+  email_confirmation:
+    enabled: false
+
+  erp:
+    enabled: false
+    base_url: ""
+
+  web_portal:
+    enabled: false
+    base_url: ""
+
+routing:
+  rules_file: "config/routing_rules.yaml"
+
+logging:
+  level: "INFO"
+  format: "json"

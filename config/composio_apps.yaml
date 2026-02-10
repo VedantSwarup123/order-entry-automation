@@ -1,0 +1,16 @@
+# Composio actions used by each adapter
+# Reference: https://docs.composio.dev/
+
+gmail:
+  - GMAIL_FETCH_EMAILS        # email_ingest.py – poll for new orders
+  - GMAIL_SEND_EMAIL           # notifications.py – order confirmation
+
+outlook:
+  - OUTLOOK_FETCH_EMAILS       # email_ingest.py – poll for new orders
+
+google_sheets:
+  - GOOGLESHEETS_GET_SPREADSHEET_DATA   # sheets_ingest.py – read new rows
+  - GOOGLESHEETS_APPEND_ROW            # sheets_output.py – write order summary
+
+slack:
+  - SLACK_SEND_MESSAGE         # notifications.py – order alerts
