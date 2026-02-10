@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "order-automation"
+version = "0.1.0"
+description = "Order Entry Automation System"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0,<3.0",
+    "sqlalchemy>=2.0,<3.0",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.23",
+    "streamlit>=1.28",
+    "pytesseract>=0.3",
+    "Pillow>=10.0",
+    "pdf2image>=1.16",
+    "click>=8.1",
+    "APScheduler>=3.10",
+    "watchdog>=3.0",
+    "structlog>=23.1",
+    "tenacity>=8.2",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "httpx>=0.25",
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+composio = ["composio-core>=0.3"]
+dev = [
+    "pytest>=7.4",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1",
+    "mypy>=1.5",
+    "httpx>=0.25",
+]
+
+[project.scripts]
+order-auto = "order_automation.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
