@@ -1,0 +1,16 @@
+rules:
+  - name: "All to database"
+    condition: "always"
+    destination: "database"
+  - name: "All to sheets"
+    condition: "always"
+    destination: "sheets"
+  - name: "Notify all"
+    condition: "always"
+    destination: "slack_notify"
+  - name: "Large orders to ERP"
+    condition: {field: "total_amount", operator: ">", value: 5000}
+    destination: "erp"
+  - name: "West coast to portal"
+    condition: {field: "ship_to.state", operator: "in", value: ["CA","OR","WA","AZ","NV"]}
+    destination: "web_portal"
