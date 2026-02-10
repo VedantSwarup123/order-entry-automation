@@ -25,6 +25,21 @@ log = structlog.get_logger()
 
 app = FastAPI(title="Order Entry Automation API", version="0.1.0")
 
+# CORS middleware for frontend
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount dashboard API router
+from order_automation.api.dashboard import router as dashboard_router
+
+app.include_router(dashboard_router)
+
 # The pipeline will be injected by main.py at startup.
 _pipeline: Any = None
 
