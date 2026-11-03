@@ -43,7 +43,7 @@ SAP_SALES_ORG = {
     "CA": "2000",
 }
 
-# Material group mapping for Ledvance products
+# Material group mapping for lighting products
 SAP_MATERIAL_GROUPS = {
     "LED-": "LEDLAMP",
     "FIX-": "FIXTUR",

@@ -26,7 +26,7 @@ except ImportError:
     anthropic = None  # type: ignore[assignment]
 
 
-EXTRACTION_PROMPT = """You are an order extraction assistant for Ledvance, a lighting products distributor.
+EXTRACTION_PROMPT = """You are an order extraction assistant for a lighting products manufacturer.
 Extract structured order data from the following text. Return ONLY valid JSON with this schema:
 
 {
@@ -55,7 +55,7 @@ Rules:
 - If a field is not found, use empty string "" for strings, 0 for numbers
 - Set confidence based on how complete and clear the data is (1.0 = perfect, 0.5 = partial, 0.0 = unusable)
 - Flag anomalies: unusual quantities (>1000), missing required fields, suspicious pricing, duplicate items
-- Common Ledvance SKUs start with LED-, FIX-, CTL-, WIRE-, CONN-, EMG-, BATT-
+- Common SKUs start with LED-, FIX-, CTL-, WIRE-, CONN-, EMG-, BATT-
 - Recognize common distributor names: Sonepar, Rexel, WESCO, Graybar, CED, City Electric
 
 TEXT TO EXTRACT:

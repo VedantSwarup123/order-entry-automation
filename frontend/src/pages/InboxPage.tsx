@@ -21,7 +21,7 @@ interface InboxItem {
 }
 
 const mockEmails: InboxItem[] = [
-  { id: '1', from: 'purchasing@ledvance.com', subject: 'PO-2024-0891 - Monthly Order', date: '2024-03-15T10:30:00Z', status: 'processed', detail: '3 line items extracted' },
+  { id: '1', from: 'purchasing@example-distributor.com', subject: 'PO-2024-0891 - Monthly Order', date: '2024-03-15T10:30:00Z', status: 'processed', detail: '3 line items extracted' },
   { id: '2', from: 'orders@acme-corp.com', subject: 'RE: PO-2024-0445 Revised', date: '2024-03-14T16:20:00Z', status: 'processed', detail: '5 line items extracted' },
   { id: '3', from: 'john@bigretailer.com', subject: 'Urgent: PO-8832 ASAP', date: '2024-03-14T09:15:00Z', status: 'pending', detail: 'Awaiting review' },
   { id: '4', from: 'procurement@techcorp.io', subject: 'PO-TC-2024-112', date: '2024-03-13T14:00:00Z', status: 'failed', detail: 'No line items found' },
@@ -29,7 +29,7 @@ const mockEmails: InboxItem[] = [
 
 const mockCsvFiles: InboxItem[] = [
   { id: '1', filename: 'march_orders_batch1.csv', date: '2024-03-15T08:00:00Z', status: 'processed', detail: '45 rows, 12 orders created' },
-  { id: '2', filename: 'ledvance_q1_orders.xlsx', date: '2024-03-14T11:30:00Z', status: 'processed', detail: '120 rows, 28 orders created' },
+  { id: '2', filename: 'q1_orders.xlsx', date: '2024-03-14T11:30:00Z', status: 'processed', detail: '120 rows, 28 orders created' },
   { id: '3', filename: 'weekly_restock.csv', date: '2024-03-13T09:00:00Z', status: 'processed', detail: '18 rows, 6 orders created' },
 ];
 
