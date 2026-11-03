@@ -69,30 +69,30 @@ CITIES = {
 
 # Ledvance LED product SKUs
 SKUS = [
-    ("LED-A19-60W", "LEDVANCE A19 LED Bulb 60W Equivalent", Decimal("3.99"), "EA"),
-    ("LED-A19-100W", "LEDVANCE A19 LED Bulb 100W Equivalent", Decimal("5.49"), "EA"),
-    ("LED-BR30-65W", "LEDVANCE BR30 LED Flood 65W Equivalent", Decimal("6.99"), "EA"),
-    ("LED-BR40-75W", "LEDVANCE BR40 LED Flood 75W Equivalent", Decimal("8.99"), "EA"),
-    ("LED-PAR38-90W", "LEDVANCE PAR38 LED Spot 90W Equivalent", Decimal("12.99"), "EA"),
-    ("LED-PAR30-75W", "LEDVANCE PAR30 LED Spot 75W Equivalent", Decimal("10.49"), "EA"),
-    ("LED-T8-4FT", "SYLVANIA LED T8 SubstiTUBE 4ft 15W", Decimal("8.99"), "EA"),
-    ("LED-T8-2FT", "SYLVANIA LED T8 SubstiTUBE 2ft 8W", Decimal("6.49"), "EA"),
-    ("LED-MR16-50W", "LEDVANCE MR16 LED 50W Equivalent GU10", Decimal("7.49"), "EA"),
-    ("LED-STRIP-5M", "SYLVANIA Smart+ LED Strip 5m RGBW", Decimal("29.99"), "EA"),
-    ("LED-CAN-60W", "LEDVANCE B11 LED Candelabra 60W Equiv", Decimal("4.99"), "EA"),
-    ("FIX-TROFFER-2x4", "SYLVANIA 2x4 LED Troffer ValueLED", Decimal("79.99"), "EA"),
-    ("FIX-TROFFER-2x2", "SYLVANIA 2x2 LED Troffer ValueLED", Decimal("59.99"), "EA"),
-    ("FIX-PANEL-2x2", "SYLVANIA LED Flat Panel 2x2 40W", Decimal("64.99"), "EA"),
-    ("FIX-PANEL-1x4", "SYLVANIA LED Flat Panel 1x4 50W", Decimal("74.99"), "EA"),
-    ("FIX-HIGH-BAY", "SYLVANIA LED High Bay 200W 25000lm", Decimal("149.99"), "EA"),
-    ("FIX-STRIP-4FT", "SYLVANIA LED Strip Light 4ft 25W", Decimal("34.99"), "EA"),
-    ("FIX-WRAP-4FT", "SYLVANIA LED Wrap Light 4ft 40W", Decimal("44.99"), "EA"),
-    ("FIX-VAPOR-4FT", "SYLVANIA LED Vapor Tight 4ft 40W IP65", Decimal("69.99"), "EA"),
-    ("CTL-DIMMER-WiFi", "SYLVANIA Smart+ WiFi Dimmer Switch", Decimal("24.99"), "EA"),
-    ("CTL-SENSOR-OCC", "SYLVANIA Occupancy Sensor Switch", Decimal("18.99"), "EA"),
-    ("CTL-SENSOR-DL", "SYLVANIA Daylight Sensor", Decimal("22.99"), "EA"),
-    ("EMG-EXIT-LED", "SYLVANIA LED Exit Sign Combo Emergency", Decimal("49.99"), "EA"),
-    ("EMG-BATT-PACK", "SYLVANIA Emergency Battery Pack", Decimal("34.99"), "EA"),
+    ("LED-A19-60W", "A19 LED Bulb 60W Equivalent", Decimal("3.99"), "EA"),
+    ("LED-A19-100W", "A19 LED Bulb 100W Equivalent", Decimal("5.49"), "EA"),
+    ("LED-BR30-65W", "BR30 LED Flood 65W Equivalent", Decimal("6.99"), "EA"),
+    ("LED-BR40-75W", "BR40 LED Flood 75W Equivalent", Decimal("8.99"), "EA"),
+    ("LED-PAR38-90W", "PAR38 LED Spot 90W Equivalent", Decimal("12.99"), "EA"),
+    ("LED-PAR30-75W", "PAR30 LED Spot 75W Equivalent", Decimal("10.49"), "EA"),
+    ("LED-T8-4FT", "LED T8 SubstiTUBE 4ft 15W", Decimal("8.99"), "EA"),
+    ("LED-T8-2FT", "LED T8 SubstiTUBE 2ft 8W", Decimal("6.49"), "EA"),
+    ("LED-MR16-50W", "MR16 LED 50W Equivalent GU10", Decimal("7.49"), "EA"),
+    ("LED-STRIP-5M", "Smart+ LED Strip 5m RGBW", Decimal("29.99"), "EA"),
+    ("LED-CAN-60W", "B11 LED Candelabra 60W Equiv", Decimal("4.99"), "EA"),
+    ("FIX-TROFFER-2x4", "2x4 LED Troffer ValueLED", Decimal("79.99"), "EA"),
+    ("FIX-TROFFER-2x2", "2x2 LED Troffer ValueLED", Decimal("59.99"), "EA"),
+    ("FIX-PANEL-2x2", "LED Flat Panel 2x2 40W", Decimal("64.99"), "EA"),
+    ("FIX-PANEL-1x4", "LED Flat Panel 1x4 50W", Decimal("74.99"), "EA"),
+    ("FIX-HIGH-BAY", "LED High Bay 200W 25000lm", Decimal("149.99"), "EA"),
+    ("FIX-STRIP-4FT", "LED Strip Light 4ft 25W", Decimal("34.99"), "EA"),
+    ("FIX-WRAP-4FT", "LED Wrap Light 4ft 40W", Decimal("44.99"), "EA"),
+    ("FIX-VAPOR-4FT", "LED Vapor Tight 4ft 40W IP65", Decimal("69.99"), "EA"),
+    ("CTL-DIMMER-WiFi", "Smart+ WiFi Dimmer Switch", Decimal("24.99"), "EA"),
+    ("CTL-SENSOR-OCC", "Occupancy Sensor Switch", Decimal("18.99"), "EA"),
+    ("CTL-SENSOR-DL", "Daylight Sensor", Decimal("22.99"), "EA"),
+    ("EMG-EXIT-LED", "LED Exit Sign Combo Emergency", Decimal("49.99"), "EA"),
+    ("EMG-BATT-PACK", "Emergency Battery Pack", Decimal("34.99"), "EA"),
     ("WIRE-14AWG-250", "14 AWG THHN Wire 250ft Spool", Decimal("42.99"), "CS"),
     ("CONN-WAGO-5P", "Wago 5-Port Lever Connector 50pk", Decimal("34.99"), "BX"),
 ]
@@ -105,7 +105,7 @@ SAMPLE_EMAILS = [
     """From: orders@sonepar.com
 Subject: PO #SP-2026-4521 - LED Lighting Order
 
-Hi Ledvance Team,
+Hi team,
 
 Please process the following order:
 
@@ -153,6 +153,54 @@ Graybar Electric - Denver Branch
 Denver CO 80204
 
 SPECIAL INSTRUCTIONS: Dock appointment required""",
+]
+
+
+def _render_source_text(source, cust_name, po_number, line_items, ship_name, city, state, zip_code):
+    """Render an email/fax-style document from the order's own data, so extraction matches."""
+    lines = [f"{li.quantity:>5}  {li.sku:<18} {li.unit_price}" for li in line_items[:3]]
+    body = "\n".join(lines)
+    if source == "fax":
+        return (f"FAX - PURCHASE ORDER\n\nFROM: {cust_name}\nPO#: {po_number}\n\n"
+                f"  QTY  ITEM               PRICE\n{body}\n\nSHIP TO:\n{ship_name}\n{city} {state} {zip_code}")
+    return (f"Subject: Order {po_number}\n\nHi team,\n\nPlease enter the order below for {cust_name}.\n"
+            f"PO: {po_number}\n\n{body}\n\nShip to: {ship_name}, {city}, {state} {zip_code}\n\nThanks")
+
+
+# Extracted results for the three hand-written sample emails (index-aligned with SAMPLE_EMAILS)
+DEMO_EXTRACTIONS = [
+    {
+        "customer_id": "CUST-LED01", "customer_name": "Sonepar USA", "po_number": "SP-2026-4521",
+        "ship_to": {"name": "Sonepar Distribution Center", "line1": "4521 Industrial Pkwy", "city": "Houston", "state": "TX", "postal_code": "77001"},
+        "line_items": [
+            {"sku": "LED-A19-60W", "quantity": 500, "unit_price": 3.99},
+            {"sku": "LED-BR30-65W", "quantity": 200, "unit_price": 6.99},
+            {"sku": "FIX-TROFFER-2x4", "quantity": 50, "unit_price": 79.99},
+        ],
+        "confidence": 0.82,
+        "anomalies": ["Rush delivery requested: confirm ship date"],
+    },
+    {
+        "customer_id": "CUST-LED02", "customer_name": "Rexel Holdings", "po_number": "REX-0892",
+        "ship_to": {"name": "Rexel Warehouse", "line1": "892 Commerce Dr", "city": "Atlanta", "state": "GA", "postal_code": "30301"},
+        "line_items": [
+            {"sku": "LED-T8-4FT", "quantity": 1000, "unit_price": 8.99},
+            {"sku": "FIX-PANEL-2x2", "quantity": 300, "unit_price": 64.99},
+        ],
+        "confidence": 0.61,
+        "anomalies": ["PO number only found in subject line", "Large quantity: LED-T8-4FT x 1000"],
+    },
+    {
+        "customer_id": "", "customer_name": "Graybar Electric", "po_number": "GB-44891",
+        "ship_to": {"name": "Graybar Electric - Denver Branch", "line1": "1200 W Colfax Ave", "city": "Denver", "state": "CO", "postal_code": "80204"},
+        "line_items": [
+            {"sku": "LED-PAR38-90W", "quantity": 200, "unit_price": 12.99},
+            {"sku": "CTL-DIMMER-WiFi", "quantity": 150, "unit_price": 24.99},
+            {"sku": "EMG-EXIT-LED", "quantity": 75, "unit_price": 49.99},
+        ],
+        "confidence": 0.54,
+        "anomalies": ["Missing customer_id", "Low extraction confidence"],
+    },
 ]
 
 
@@ -322,7 +370,10 @@ def create_seed_data():
             if random.random() > 0.7:
                 anomalies.append("Missing ship-to address")
 
-            sample_text = random.choice(SAMPLE_EMAILS) if source == "email" else f"[Fax OCR text for PO {po_number}]"
+            sample_text = _render_source_text(
+                source, cust_name, po_number, line_items,
+                f"{cust_name} - {ship_to_suffix}", city, state, "",
+            )
 
             review_status = random.choice(["pending", "pending", "pending", "approved", "rejected"])
 
@@ -356,7 +407,11 @@ def create_seed_data():
     # Add a few more explicit pending review items for demo
     for idx, email_text in enumerate(SAMPLE_EMAILS):
         order_id = str(uuid.uuid4())
-        cust_id, cust_name = CUSTOMERS[idx]
+        ex = DEMO_EXTRACTIONS[idx]
+        cust_id, cust_name = ex["customer_id"], ex["customer_name"]
+        demo_po = ex["po_number"]
+        demo_total = sum(li["quantity"] * li["unit_price"] for li in ex["line_items"])
+        demo_qty = sum(li["quantity"] for li in ex["line_items"])
         source = "email"
         created_at = now - timedelta(hours=random.randint(1, 24))
 
@@ -367,18 +422,18 @@ def create_seed_data():
             source_ref=f"email-demo-{idx}",
             customer_id=cust_id,
             customer_name=cust_name,
-            po_number=f"DEMO-PO-{idx + 1}",
+            po_number=demo_po,
             order_date=created_at.strftime("%Y-%m-%d"),
-            ship_to_name=f"{cust_name} - Warehouse",
-            ship_to_line1="123 Demo St",
-            ship_to_city="Houston",
-            ship_to_state="TX",
-            ship_to_postal_code="77001",
+            ship_to_name=ex["ship_to"]["name"],
+            ship_to_line1=ex["ship_to"]["line1"],
+            ship_to_city=ex["ship_to"]["city"],
+            ship_to_state=ex["ship_to"]["state"],
+            ship_to_postal_code=ex["ship_to"]["postal_code"],
             ship_to_country="US",
-            total_amount=random.uniform(500, 15000),
-            total_quantity=random.randint(50, 500),
+            total_amount=demo_total,
+            total_quantity=demo_qty,
             status="pending",
-            confidence=round(random.uniform(0.35, 0.6), 2),
+            confidence=ex["confidence"],
             extraction_method="llm",
             sap_order_type="ZL01",
             sap_data=json.dumps({"order_type": "ZL01", "order_type_desc": "Stock Order", "sales_org": "1000", "plant": "3000"}),
@@ -390,20 +445,12 @@ def create_seed_data():
             order_id=order_id,
             source=source,
             customer_name=cust_name,
-            po_number=f"DEMO-PO-{idx + 1}",
-            confidence=round(random.uniform(0.35, 0.6), 2),
+            po_number=demo_po,
+            confidence=ex["confidence"],
             extraction_method="llm",
-            anomalies=json.dumps(["Low extraction confidence", "Missing fields detected"]),
+            anomalies=json.dumps(ex["anomalies"]),
             original_text=email_text,
-            extracted_data=json.dumps({
-                "customer_id": cust_id,
-                "customer_name": cust_name,
-                "po_number": f"DEMO-PO-{idx + 1}",
-                "line_items": [
-                    {"sku": "LED-A19-60W", "quantity": 500, "unit_price": 3.99},
-                    {"sku": "LED-BR30-65W", "quantity": 200, "unit_price": 6.99},
-                ],
-            }),
+            extracted_data=json.dumps({k: v for k, v in ex.items() if k not in ("confidence", "anomalies")}),
             status="pending",
             created_at=created_at,
         ))
